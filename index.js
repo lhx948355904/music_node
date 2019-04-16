@@ -54,10 +54,11 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
     	res.send(resObj)
     })
 }).get('/playlist/cate',function(req,res){
+	//歌单分类
 	var resObj = {
 		data:[]
 	}
-	//歌单分类
+	
 	request.get('https://music.163.com/discover/playlist').end(function(err,_response){
 		var dom = _response.text;
 		
@@ -78,6 +79,7 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
 		res.send(resObj)
 	})
 }).get('/radioCate',function(req,res){
+	//电台分类
 	var resObj = {
 		data:[]
 	}
@@ -98,6 +100,47 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
 		
 		res.send(resObj)
 	})
+}).get('/radioData/:id/:pageSize',function(req,res){
+	var id = req.params.id;
+	var offset = req.params.pageSize*30;
+	
+	var resObj = {
+		newRadio:[],
+		dataList:[],
+		pageCount:"",
+	}
+	
+	request.get(`https://music.163.com/discover/djradio/category?id=${id}&order=1&_hash=allradios&limit=30&offset=${offset}`).end((err,_response)=>{
+		var dom = _response.text;
+		var $ = cheerio.load(dom);
+		
+		$(".new").find('li').each(function(index,obj){
+			resObj.newRadio.push({
+				href:"https://music.163.com"+$(obj).find('a').eq(0).attr('href'),
+				img:$(obj).find('img').attr('src'),
+				title1:$(obj).find('a').eq(1).text(),
+				title2:$(obj).find('p').text()
+			})
+		})
+		
+		$("#allradios").find('li').each(function(index,obj){
+			resObj.dataList.push({
+				href:"https://music.163.com"+$(obj).find('a').eq(0).attr('href'),
+				img:$(obj).find('img').attr('src'),
+				title:$(obj).find('a').eq(1).text(),
+				title2:$(obj).find('p').eq(1).text(),
+				author:$(obj).find('a').eq(2).text(),
+				authorHref:"https://music.163.com"+$(obj).find('a').eq(2).attr('href')
+			})
+		})
+		
+		var data = $(".u-page").eq(0).find('.zpgi');
+		var i = data.length-1;
+    	resObj.pageCount = data.eq(i).text();
+		
+		res.send(resObj);
+	})
+	
 })
 /**
  * 开启express服务,监听本机3000端口
@@ -107,5 +150,5 @@ var server = app.listen(81, function(){
     // 如果 express 开启成功,则会执行这个方法
     var port = server.address().port;
 
-    console.log(`Express app listening at http://localhost:${port}`);
+    console.log(`地址为http://localhost:${port}`);
 });
