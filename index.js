@@ -10,8 +10,85 @@ var cheerio = require('cheerio');
  * 如果需要其他路由,可以这样定义,比如 需要我们的获取推荐歌单的路由 /recommendLst
  * app.get('/recommendLst', function(req, res){});
  */
-app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
-	//获取歌单 和 页数
+app
+
+//排行榜分类
+.get('/rankingCata',function(req,res){
+	
+	var resObj = {
+		special:[],
+		allWorld:[]
+	}
+	
+	request.get(`https://music.163.com/discover/toplist`).end(function(err,_response){
+		var dom = _response.text;
+		
+		var $ = cheerio.load(dom);
+		
+		$("#toplist").find('.g-sd3').find('ul').eq(0).find('li').each(function(index,obj){
+			resObj.special.push({
+				name:$(obj).find('a').eq(1).text(),
+				href:"https://music.163.com"+$(obj).find('a').eq(1).attr('href'),
+				imgSrc:$(obj).find('img').attr('src'),
+				status:$(obj).find('p').eq(1).text(),
+				id:$(obj).attr('data-res-id')
+			})
+		})
+		
+		$("#toplist").find('.g-sd3').find('ul').eq(1).find('li').each(function(index,obj){
+			resObj.allWorld.push({
+				name:$(obj).find('a').eq(1).text(),
+				href:"https://music.163.com"+$(obj).find('a').eq(1).attr('href'),
+				imgSrc:$(obj).find('img').attr('src'),
+				status:$(obj).find('p').eq(1).text(),
+				id:$(obj).attr('data-res-id')
+			})
+		})
+		
+		res.send(resObj);
+	})
+})
+
+//排行榜歌曲
+.get('/rankingCate/:id',function(req,res){
+	
+	var id = req.params.id;
+	var resObj = {
+		data:[],
+	}
+	
+	request.get(`https://music.163.com/discover/toplist?id=${id}`).end((err,_response)=>{
+		var dom = _response.text;
+		
+		var $ = cheerio.load(dom);
+		
+		resObj.data = $("#song-list-pre-data").text();
+		
+		resObj.name = $(".g-wrap").find('h2.f-ff2').text();
+		
+		resObj.status = $(".g-wrap").find('.sep.s-fc3').text();
+		
+		resObj.status1 = $(".g-wrap").find('.user').find('.s-fc4').text();
+		
+		resObj.fav = $("#toplist-fav").find('i').text();
+		
+		resObj.share = $("#toplist-share").find('i').text();
+		
+		resObj.comment = "("+$("#comment-count").text()+")";
+		
+		resObj.playCount = $("#play-count").text();
+		
+		resObj.imgSrc = $(".g-wrap").find('img').attr('src');
+		
+		resObj.songCount = $(".g-wrap12").find('.u-title').find('.sub.s-fc3').find('span').text();
+		
+		res.send(resObj);
+	})
+})
+
+//获取歌单 和 页数
+.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
+
 	var status = req.params.status,
 		cate = encodeURI(req.params.cate),
 		limit = req.params.limit,
@@ -53,8 +130,11 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
     	
     	res.send(resObj)
     })
-}).get('/playlist/cate',function(req,res){
-	//歌单分类
+})
+
+//歌单分类
+.get('/playlist/cate',function(req,res){
+	
 	var resObj = {
 		data:[]
 	}
@@ -78,8 +158,11 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
 		
 		res.send(resObj)
 	})
-}).get('/radioCate',function(req,res){
-	//电台分类
+})
+
+//电台分类
+.get('/radioCate',function(req,res){
+	
 	var resObj = {
 		data:[]
 	}
@@ -100,7 +183,11 @@ app.get('/playlist/:status/:cate/:limit/:offset', function(req, res){
 		
 		res.send(resObj)
 	})
-}).get('/radioData/:id/:pageSize',function(req,res){
+})
+
+//电台数据（包括分页）
+.get('/radioData/:id/:pageSize',function(req,res){
+	
 	var id = req.params.id;
 	var offset = req.params.pageSize*30;
 	
