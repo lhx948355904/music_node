@@ -12,6 +12,97 @@ var cheerio = require('cheerio');
  */
 app
 
+//获取歌曲
+.get('/getSong/:id',function(req,res){
+	var id = req.params.id;
+	
+	var song = {
+		
+	}
+	
+	request.get(``).end((err,_response)=>{
+		console.log(_response);
+		
+		var dom = _response.text;
+		
+		var $ = cheerio.load(dom);
+		
+		res.send(JSON.stringify(_response));
+	})
+})
+
+//首页数据
+.get('/indexData',function(req,res){
+	var data = {
+		hotSong:[],
+		styleSong:[],
+		newSong:[],
+		songList:[]
+	}
+	
+	request.get("https://music.163.com/discover").end((err,_response)=>{
+		var dom = _response.text;
+		
+		var $ = cheerio.load(dom);
+		
+		$(".n-rcmd").eq(0).find('li').each(function(i,e){
+			data.hotSong.push({
+				title:$(e).children('.dec').find('a').text(),
+				namehref:"https://music.163.com"+$(e).children('.dec').find('a').attr('href'),
+				id:$(e).children('.dec').find('a').attr('data-res-id'),
+				imgSrc:$(e).children('.u-cover').children('img').attr('src'),
+				time:$(e).find('.nb').text(),
+				radio:$(e).find('.u-icn').length>0?true:false
+			})
+		})
+		
+		$("#personalRec").find('li').each(function(i,e){
+			if(i!=0){
+				data.styleSong.push({
+					title:$(e).children('.dec').children('a').text(),
+					namehref:"https://music.163.com"+$(e).children('.dec').children('a').attr('href'),
+					id:$(e).children('.dec').children('a').attr('data-res-id'),
+					imgSrc:$(e).children('.u-cover').children('img').attr('src'),
+					time:$(e).find('.nb').text(),
+					title1:$(e).children('.idv').children('em').text()
+				})
+			}
+		})
+		
+		$(".n-new").eq(0).find('.roller-flag').each(function(i,e){
+			data.newSong.push([]);
+			$(e).find('li').each(function(index,obj){
+				data.newSong[i].push({
+					name:$(obj).children('.f-thide').eq(0).children('a').text(),
+					albumHref:"https://music.163.com"+$(obj).children('.f-thide').eq(0).children('a').attr('href'),
+					author:$(obj).children('.tit').children('a').text(),
+					authorHref:"https://music.163.com"+$(obj).children('.tit').children('a').attr('href'),
+					img:$(obj).find('.j-img').attr('data-src')
+				})
+			})
+		})
+		
+		$(".n-bilst").eq(0).find('.blk').each(function(i,e){
+			data.songList.push([]);
+			data.songList[i].push({
+				img:$(e).find('.j-img').attr('data-src'),
+				name:$(e).find('.msk').attr('title'),
+				href:"https://music.163.com"+$(e).find('.msk').attr('href')
+			})
+			
+			$(e).find('li').each(function(index,obj){
+				data.songList[i].push({
+					order:index+1,
+					name:$(obj).find('.nm').text(),
+					href:"https://music.163.com"+$(obj).find('.nm').attr('href'),
+				})
+			})
+		})
+		
+		res.send(data);
+	})
+})
+
 //排行榜分类
 .get('/rankingCata',function(req,res){
 	
